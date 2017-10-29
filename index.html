@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+</head>
+<body>
+<h1>Hello World!</h1>
+<div id="future"></div>
+<form id="chat_form">
+    <input type="text" id="name" placeholder="name"/>
+    <input type="text" id="nickname" placeholder="nickname"/>
+    <input type="submit" value="signup"/>
+
+    <br><br><br><br>
+    <!--<input id="msg" type="text"/>-->
+    <!--<button id="sendMsg">Send</button>-->
+
+    <button id="generate">Open</button>
+</form>
+<script src="/jquery/dist/jquery.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var socket = io.connect('http://localhost:3000');
+    socket.on('connect', function(data) {
+        console.log(socket);
+//        socket.emit('join', 'Hello World from client');
+    });
+
+//    socket.on('messages', function(data) {
+//        alert(data);
+//    });
+
+//    socket.on('broad', function(data) {
+//        $('#future').append(data+ "<br/>");
+//    });
+
+    $('form').submit(function(e){
+        e.preventDefault();
+        var dataToSend = {
+            name: $('#name').val(),
+            nickname: $('#nickname').val()
+        };
+
+        socket.emit('login', dataToSend);
+//        var message = $('#chat_input').val();
+//        socket.emit('messages', message);
+    });
+
+    socket.on('error', function(data){
+        console.error(data);
+    });
+
+    socket.on('user', function(data){
+        switch(data.type){
+            case 'login':
+                console.log(data);
+                //save details in localstorage or sessionstorage
+                break;
+            case 'not_found':
+                console.log(data);
+                socket.emit('signup', {
+                    name: $('#name').val(),
+                    nickname: $('#nickname').val()
+                });
+                break;
+        }
+    });
+
+    //create a room with room id as sender nickname + receiver nickname in btoa
+
+
+    $('#sendMsg').click(function(e){
+        socket.emit('message', {
+            sender: "fs2",//read from localstorage,
+            receiver: "fs1",//read from localstorage,
+            room:
+            text: $('#msg').val()
+        });
+    });
+</script>
+</body>
+</html>
