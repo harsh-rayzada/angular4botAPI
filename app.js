@@ -50,7 +50,7 @@ io.on('connection', function(client) {
         client.emit('loader');
         fs.readFile('users.json', 'utf8', function(err, data){
             if(err && err.code != 'ENOENT'){
-                console.log('Err: reading users.json : ', JSON.stringify(err));
+                console.log('Err: reading users.json : ', err);
                 client.emit('error', {status: false, message: 'Error while logging in', type: 'login'});
             }else if(data){
                 var userData = JSON.parse(data);
@@ -118,8 +118,52 @@ io.on('connection', function(client) {
     });
 
     client.on('message', function(data) {
-        fs.
-        client.in(data.room).emit('message', {sender: data.sender, text: data.text});
+        fs.readFile('messages.json', 'utf-8', function(err, msgData){
+            if(err && err.code != 'ENOENT'){
+                console.log('Err: reading message.json : ', err);
+                client.emit('error', {status: false, message: 'Something went wrong while sending message', type: 'message'});
+            }else if(err && err.code == 'ENOENT'){
+                // {sender, receiver, text, room}
+                var messages = [];
+                messages.push({
+                    sender: data.sender,
+                    receiver: data.receiver,
+                    message: data.text,
+                    time: new Date().toISOString()
+                });
+                fs.appendFile('messages.json', JSON.stringify(messages), function(writeErr){
+                    if(writeErr){
+                        console.log('Err: writing to messages.json : ', err);
+                        client.emit('error', {status: false, message: 'Something went wrong while sending message', type: 'message'});
+                    }else{
+                        client.in(data.room).emit('message', {sender: data.sender, text: data.text});
+                    }
+                });
+            }else{
+                var messages = JSON.parse(msgData);
+                messages.push({
+                    sender: data.sender,
+                    receiver: data.receiver,
+                    message: data.text,
+                    time: new Date().toDateString()
+                });
+                fs.unlink('messages.json', function(unlinkErr){
+                    if(unlinkErr){
+                        console.log('Err: deleting messages.json : ', err);
+                        client.emit('error', {status: false, message: 'Something went wrong while sending message', type: 'message'});
+                    }else{
+                        fs.writeFile('messages.json', JSON.stringify(messages), function(writeErr){
+                            if(writeErr){
+                                console.log('Err: writing to messages.json : ', err);
+                                client.emit('error', {status: false, message: 'Something went wrong while sending message', type: 'message'});
+                            }else{
+                                client.in(data.room).emit('message', {sender: data.sender, text: data.text});
+                            }
+                        });
+                    }
+                });
+            }
+        });
     });
 });
 
